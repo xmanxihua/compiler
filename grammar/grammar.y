@@ -1,19 +1,19 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
+#include "grammar.h"
 #define YYDEBUG	1
 
 extern char *yytext;
 
-#define MAX_YYTEXT_LENGTH	8192
-
 TOKEN* curr;
+
 %}
 
 %union {
-	TOKEN*  token_value;
-	TOKEN* token_list_value;
+	TOKEN* token_value;
+	TOKEN_LIST* token_list_value;
 }
 
 %token COLON OR CR
@@ -30,16 +30,34 @@ line_list
 line
 :product_left COLON product_right CR
 {
-	
+	TOKEN* token = $1;
+	char product[8192]={0};
+	char * p = (char*) product;
+	int len = strlen(token->value);
+	strncpy(p, token->value, len+1);
+	p+=len;
+	*(p++)=':';
+	TOKEN_LIST* list;
+	for (list = token->children;list;list = list->next){
+		TOKEN* t;
+		for (t=list->head; t; t = t->next){
+			len = strlen(t->value);
+			strncpy(p, t->value, len+1);
+			p+=len;
+		}
+		if (list->next)
+			*(p++) = '|';
+	}
+	printf("product:%s\n", product);
 }
 ;
 product_left
 :UNTERMINAL
 {
 	TOKEN* token = $1;
-	token -> children = (TOKEN_LIST*)malloc(sizeof TOKEN_LIST);
-	$$ = token;
+	token -> children = (TOKEN_LIST*)malloc(sizeof (TOKEN_LIST));
 	curr=token;
+	$$ = token;
 }
 ;
 product_right
@@ -50,6 +68,7 @@ product_right
 	
 	token_list->head = token;
 	token_list->tail = token;
+	token->parent = token_list;
 
 	$$ = token_list;
 }
@@ -57,7 +76,11 @@ product_right
 {
 	TOKEN* token = $1;
 	TOKEN_LIST* token_list = curr->children;
+	
 	token_list->head = token;
+	token_list->tail = token;
+	token->parent = token_list;
+	
 	$$ = token_list;
 }
 |product_right TERMINAL 
@@ -72,6 +95,7 @@ product_right
 		token->pre = list->head;
 	}
 	list->tail = token;	
+	token->parent = list;
 	$$ = list;
 }
 |product_right UNTERMINAL 
@@ -86,6 +110,7 @@ product_right
 		token->pre = list->head;
 	}
 	list->tail = token;	
+	token->parent = list;
 	$$ = list;
 }
 |product_right OR TERMINAL 
@@ -97,7 +122,7 @@ product_right
 		tail=tail->next;
 	}
 	
-	TOKEN_LIST* token_list = (TOKEN_LIST*)malloc(sizeof TOKEN_LIST);
+	TOKEN_LIST* token_list = (TOKEN_LIST*)malloc(sizeof (TOKEN_LIST));
 	tail->next = token_list;
 	token_list->pre = tail;
 	
@@ -116,7 +141,7 @@ product_right
 		tail=tail->next;
 	}
 	
-	TOKEN_LIST* token_list = (TOKEN_LIST*)malloc(sizeof TOKEN_LIST);
+	TOKEN_LIST* token_list = (TOKEN_LIST*)malloc(sizeof (TOKEN_LIST));
 	tail->next = token_list;
 	token_list->pre = tail;
 	
@@ -129,26 +154,6 @@ product_right
 ;
 
 %%
-typedef struct TOKEN TOKEN;
-
-typedef struct TOKEN_LIST {
-	struct TOKEN_LIST* next;
-	struct TOKEN_LIST* pre;
-	TOKEN*	head;
-	TOKEN* tail;
-	TOKEN* parent;
-} TOKEN_LIST;
-
-typedef struct TOKEN {
-	TOKEN* next;
-	TOKEN* pre;
-	
-	TOKEN_LIST* parent;
-	TOKEN_LIST* children;
-	TOKEN_LIST* children_tail;
-	char* value;
-	int type;
-} TOKEN;
 
 int yyerror(char const* str){
 	extern char* yytext;
