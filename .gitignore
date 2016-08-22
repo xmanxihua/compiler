@@ -1,0 +1,10 @@
+*.swp
+y.tab.h
+y.tab.c
+y.output
+lex.yy.c
+grammar/y.tab.h
+grammar/y.tab.c
+grammar/y.output
+grammar/lex.yy.c
+
