@@ -48,7 +48,7 @@ line
 		if (list->next)
 			*(p++) = '|';
 	}
-	printf("product:%s\n", product);
+	printf("product = %s\n", product);
 }
 ;
 product_left
