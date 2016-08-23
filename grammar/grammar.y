@@ -9,6 +9,7 @@ extern char *yytext;
 
 TOKEN* curr;
 
+TOKEN_MAP* map;
 %}
 
 %union {
@@ -57,6 +58,10 @@ product_left
 	TOKEN* token = $1;
 	token -> children = (TOKEN_LIST*)malloc(sizeof (TOKEN_LIST));
 	curr=token;
+
+	if(!map)
+		map = createMap();
+	put(map, token);
 	$$ = token;
 }
 ;

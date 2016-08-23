@@ -3,7 +3,7 @@
 #include "grammar.h"
 
 int main() {
-	TOKEN_MAP* map = initMap();
+	TOKEN_MAP* map = createMap();
 	printf ("isEmpty(map):   %s\n", isEmpty(map)?"true":"false");
 	TOKEN token1;
 	token1.value = "a";

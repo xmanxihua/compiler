@@ -23,13 +23,22 @@ static unsigned int indexFor(unsigned int hashCode, size_t length){
         return hashCode & (length -1);
 }
 
-TOKEN_MAP* initMap(){
+TOKEN_MAP* createMap(){
         TOKEN_MAP* map = (TOKEN_MAP*)malloc(sizeof (TOKEN_MAP));
         memset(map, 0, sizeof(TOKEN_MAP));
         map->capacity = MAP_INIT_CAPACITY;
         map->container = (TOKEN_ENTRY**)malloc(map->capacity * sizeof (TOKEN_ENTRY*));
         memset(map->container, 0, map->capacity * sizeof (TOKEN_ENTRY*));
         return map;
+}
+
+void initMap(TOKEN_MAP* map){
+	if (!map)
+		return;
+        memset(map, 0, sizeof(TOKEN_MAP));
+        map->capacity = MAP_INIT_CAPACITY;
+        map->container = (TOKEN_ENTRY**)malloc(map->capacity * sizeof (TOKEN_ENTRY*));
+        memset(map->container, 0, map->capacity * sizeof (TOKEN_ENTRY*));
 }
 
 static void resize(TOKEN_MAP* map, size_t capacity){

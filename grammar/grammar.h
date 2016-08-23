@@ -33,7 +33,9 @@ typedef struct TOKEN_MAP {
 	TOKEN_ENTRY** container;
 }TOKEN_MAP;
 
-TOKEN_MAP* initMap();
+TOKEN_MAP* createMap();
+
+void initMap(TOKEN_MAP* map);
 
 TOKEN* put(TOKEN_MAP* map, TOKEN* token);
 
