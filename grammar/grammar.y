@@ -9,7 +9,7 @@ extern char *yytext;
 
 TOKEN* curr;
 
-TOKEN_MAP* map;
+TOKEN_MAP map;
 %}
 
 %union {
@@ -32,8 +32,16 @@ line
 :product_left COLON product_right CR
 {
 	TOKEN* token = $1;
+	if (containsKey(token->value)){
+		TOKEN_LIST* list = token -> children;
+		TOKEN_LIST* new_list = $3;
+		for (;list && list->next;list=list->next);
+		list-> next = new_list;
+		new_list->pre = list
+	}else
+		put(&map, token);
 	char product[8192]={0};
-	char * p = (char*) product;
+	char* p = (char*) product;
 	int len = strlen(token->value);
 	strncpy(p, token->value, len+1);
 	p+=len;
@@ -57,11 +65,8 @@ product_left
 {
 	TOKEN* token = $1;
 	token -> children = (TOKEN_LIST*)malloc(sizeof (TOKEN_LIST));
+	
 	curr=token;
-
-	if(!map)
-		map = createMap();
-	put(map, token);
 	$$ = token;
 }
 ;
@@ -73,6 +78,7 @@ product_right
 	
 	token_list->head = token;
 	token_list->tail = token;
+	token_list->parent = curr;
 	token->parent = token_list;
 
 	$$ = token_list;
@@ -84,6 +90,7 @@ product_right
 	
 	token_list->head = token;
 	token_list->tail = token;
+	token_list->parent = curr;
 	token->parent = token_list;
 	
 	$$ = token_list;
@@ -100,6 +107,7 @@ product_right
 		token->pre = list->head;
 	}
 	list->tail = token;	
+	list->parent = curr;
 	token->parent = list;
 	$$ = list;
 }
@@ -115,6 +123,7 @@ product_right
 		token->pre = list->head;
 	}
 	list->tail = token;	
+	list->parent = curr;
 	token->parent = list;
 	$$ = list;
 }
@@ -134,6 +143,7 @@ product_right
 	TOKEN* token = $3;
 	token_list->head = token;
 	token_list->tail = token;
+	token_list->parent = curr;
 	token->parent = token_list;
 	$$ = token_list;
 }
@@ -153,12 +163,16 @@ product_right
 	TOKEN* token = $3;
 	token_list->head = token;
 	token_list->tail = token;
+	token_list->parent = curr;
 	token->parent = token_list;
 	$$ = token_list;
 }
 ;
 
 %%
+
+void reduceLeftRecurse(){
+}
 
 int yyerror(char const* str){
 	extern char* yytext;
@@ -167,12 +181,15 @@ int yyerror(char const* str){
 }
 
 int main(void){
+	initMap(&map);
 	extern int yyparse(void);
 	extern FILE* yyin;
+	
 	yyin = stdin;
 	if (yyparse()){
 		fprintf(stderr, "Error!\n");
 		exit(1);
 	}
+	
 	return 0;
 }
