@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <common/hash_map.h>
+
 #include "grammar.h"
 #define YYDEBUG	1
 
@@ -9,7 +12,7 @@ extern char *yytext;
 
 TOKEN* curr;
 
-TOKEN_MAP map;
+HASH_MAP map;
 %}
 
 %union {
@@ -39,7 +42,7 @@ line
 		list-> next = new_list;
 		new_list->pre = list
 	}else
-		put(&map, token);
+		put(&map, token->value, token);
 	char product[8192]={0};
 	char* p = (char*) product;
 	int len = strlen(token->value);
