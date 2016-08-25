@@ -90,8 +90,10 @@ static void addTokenEntry(LINKED_HASH_MAP* map, char* key, void* value, unsigned
         ++map->size;
 
 	//add entry to  double linked list
-	LINKED_ENTRY* h = map->header;
-	h->before = 
+	entry->before = map->header->before;
+	entry->after = map->header;
+	map->header->before->after = entry;
+	map->header->before = entry;
 }
 
 void* put(LINKED_HASH_MAP* map, char* key, void* value) {
@@ -147,7 +149,12 @@ void* removeWithKey(LINKED_HASH_MAP* map, char* key) {
 			else
 				map->table[index] = entry->next;
 			--map->size;
-                        void* old=entry->value;
+			
+			//remove from double linked list
+			entry->before->after = entry->after;
+			entry->after->before = entry->before;
+			 
+			void* old=entry->value;
 			free(entry);
                         return old;
                 }
@@ -156,17 +163,15 @@ void* removeWithKey(LINKED_HASH_MAP* map, char* key) {
 }
 
 static LINKED_ENTRY* nextEntry(LINKED_ITERATOR* itr){
-	LINKED_ENTRY* e = itr->nextEntry;
-	if (e && !(itr->nextEntry = e->next)){
-		unsigned int index = indexFor(e->hash, itr->map->capacity);
-		if (index < itr->map->capacity - 1)
-			for (itr->nextEntry=itr->map->table[++index];index<itr->map->capacity && !itr->nextEntry;itr->nextEntry=itr->map->table[++index]);
-	}
+	LINKED_ENTRY* e = itr->nextEntry; 
+	if (e==itr->map->header)
+		return NULL;
+	itr->nextEntry = itr->nextEntry->after;
 	return e;
 }
 
 static int hasNext(LINKED_ITERATOR* itr) {
-	return itr->nextEntry!=NULL;
+	return itr->nextEntry!= itr->map->header;
 }
 
 LINKED_ITERATOR* createLinkedIterator(LINKED_HASH_MAP* map) {
@@ -177,8 +182,7 @@ LINKED_ITERATOR* createLinkedIterator(LINKED_HASH_MAP* map) {
 	itr->map = map;
 	itr->next=nextEntry;
 	itr->has_next=hasNext;
-
-	int i;
-	for (i=0, itr->nextEntry=map->table[i]; i<map->capacity && !itr->nextEntry; itr->nextEntry=map->table[++i]);
+	
+	itr->nextEntry = map->header->after;
 	return itr;
 }
