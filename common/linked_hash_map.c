@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hash_map.h"
+#include "linked_hash_map.h"
 
 #define MAP_INIT_CAPACITY	2
+
+static LINKED_ENTRY* HEADER;
 
 static unsigned int elf_hash(char* key){
         unsigned int hash = 0;
@@ -23,39 +25,44 @@ static unsigned int indexFor(unsigned int hashCode, size_t length){
         return hashCode & (length -1);
 }
 
-HASH_MAP* createMap(){
-        HASH_MAP* map = (HASH_MAP*)malloc(sizeof (HASH_MAP));
-        memset(map, 0, sizeof(HASH_MAP));
+LINKED_HASH_MAP* createMap(){
+        LINKED_HASH_MAP* map = (LINKED_HASH_MAP*)malloc(sizeof (LINKED_HASH_MAP));
+        memset(map, 0, sizeof(LINKED_HASH_MAP));
         map->capacity = MAP_INIT_CAPACITY;
-        map->table = (ENTRY**)malloc(map->capacity * sizeof (ENTRY*));
-        memset(map->table, 0, map->capacity * sizeof (ENTRY*));
+        map->table = (LINKED_ENTRY**)malloc(map->capacity * sizeof (LINKED_ENTRY*));
+        memset(map->table, 0, map->capacity * sizeof (LINKED_ENTRY*));
+	HEADER = (LINKED_ENTRY*) malloc(sizeof (LINKED_ENTRY));
+	memset(HEADER, 0, sizeof(LINKED_ENTRY));
+	HEADER->before = HEADER->after = HEADER;
+	HEADER->hash = -1;
+	map->header = HEADER;
         return map;
 }
 
-void initMap(HASH_MAP* map){
+void initMap(LINKED_HASH_MAP* map){
 	if (!map)
 		return;
-        memset(map, 0, sizeof(HASH_MAP));
+        memset(map, 0, sizeof(LINKED_HASH_MAP));
         map->capacity = MAP_INIT_CAPACITY;
-        map->table = (ENTRY**)malloc(map->capacity * sizeof (ENTRY*));
-        memset(map->table, 0, map->capacity * sizeof (ENTRY*));
+        map->table = (LINKED_ENTRY**)malloc(map->capacity * sizeof (LINKED_ENTRY*));
+        memset(map->table, 0, map->capacity * sizeof (LINKED_ENTRY*));
 }
 
-static void resize(HASH_MAP* map, size_t capacity){
-        ENTRY** oldTable = map->table;
+static void resize(LINKED_HASH_MAP* map, size_t capacity){
+        LINKED_ENTRY** oldTable = map->table;
         size_t oldCapacity = map->capacity;
 
-        map->table = (ENTRY**)malloc(sizeof (ENTRY*) * capacity);
-        memset(map->table, 0, capacity * sizeof (ENTRY*));
+        map->table = (LINKED_ENTRY**)malloc(sizeof (LINKED_ENTRY*) * capacity);
+        memset(map->table, 0, capacity * sizeof (LINKED_ENTRY*));
         map->capacity = capacity;
 
         //rehash
-        ENTRY* entry;
+        LINKED_ENTRY* entry;
         int i;
         for (i=0, entry=oldTable[i]; i<oldCapacity; entry=oldTable[++i]){
                 for (;entry;entry=entry->next){
                         unsigned int index = indexFor(entry->hash, capacity);
-                        ENTRY* e = map->table[index];
+                        LINKED_ENTRY* e = map->table[index];
                         entry->next = e;
                         map->table[index] = entry;
                 }
@@ -64,31 +71,35 @@ static void resize(HASH_MAP* map, size_t capacity){
 }
 
 
-static void addTokenEntry(HASH_MAP* map, char* key, void* value, unsigned int hash){
+static void addTokenEntry(LINKED_HASH_MAP* map, char* key, void* value, unsigned int hash){
         if (map->capacity<=map->size){
                 resize(map, map->capacity*2);
         }
        
-	ENTRY* entry = (ENTRY*)malloc(sizeof (ENTRY));
+	LINKED_ENTRY* entry = (LINKED_ENTRY*)malloc(sizeof (LINKED_ENTRY));
 
         entry->key = key;
         entry->value = value;
         entry->hash = hash;
 
         unsigned int index = indexFor(hash, map->capacity);
-        ENTRY* e = map->table[index];
+        LINKED_ENTRY* e = map->table[index];
         entry->next = e;
         map->table[index] = entry;
 
         ++map->size;
+
+	//add entry to  double linked list
+	LINKED_ENTRY* h = map->header;
+	h->before = 
 }
 
-void* put(HASH_MAP* map, char* key, void* value) {
+void* put(LINKED_HASH_MAP* map, char* key, void* value) {
         if (!map || !key || !value)
                 return NULL;
         unsigned int hash = elf_hash(key);
         unsigned int index = indexFor(hash, map->capacity);
-        ENTRY* entry;
+        LINKED_ENTRY* entry;
         for (entry=map->table[index];entry; entry = entry->next){
                 if (entry->hash == hash && (entry->key==key || !strncmp(entry->key, key, 8192))){
                         void* old=entry->value;
@@ -96,16 +107,17 @@ void* put(HASH_MAP* map, char* key, void* value) {
                         return old;
                 }
         }
+	
         addTokenEntry(map, key, value, hash);
         return NULL;
 }
 
-void* get(HASH_MAP* map, char* key) {
+void* get(LINKED_HASH_MAP* map, char* key) {
         if (!map || !map->size || !key)
                 return NULL;
         unsigned hash = elf_hash(key);
         unsigned int index = indexFor(hash, map->capacity);
-        ENTRY* entry;
+        LINKED_ENTRY* entry;
         for (entry = map->table[index];entry; entry=entry->next){
                 if (entry->hash == hash && (entry->key == key || !strncmp(entry->key, key, 8192)))
                         return entry->value;
@@ -113,21 +125,21 @@ void* get(HASH_MAP* map, char* key) {
         return NULL;
 }
 
-int isEmpty(HASH_MAP* map) {
+int isEmpty(LINKED_HASH_MAP* map) {
 	return map ? !map->size>0 : 1;
 }
 
-int containsKey(HASH_MAP* map, char* key){
+int containsKey(LINKED_HASH_MAP* map, char* key){
 	return get(map, key)!=NULL;
 }
 
-void* removeWithKey(HASH_MAP* map, char* key) {
+void* removeWithKey(LINKED_HASH_MAP* map, char* key) {
 	if (!map || !map->size || !key)
 		return NULL;
 	unsigned int hash = elf_hash(key);
         unsigned int index = indexFor(hash, map->capacity);
-        ENTRY* entry;
-	ENTRY* pre;
+        LINKED_ENTRY* entry;
+	LINKED_ENTRY* pre;
         for (entry=map->table[index], pre=entry;entry; pre = entry, entry = entry->next){
                 if (entry->hash == hash && (entry->key==key || !strncmp(entry->key, key, 8192))){
 			if (pre!=entry)
@@ -143,8 +155,8 @@ void* removeWithKey(HASH_MAP* map, char* key) {
 	return NULL;
 }
 
-static ENTRY* nextEntry(ITERATOR* itr){
-	ENTRY* e = itr->nextEntry;
+static LINKED_ENTRY* nextEntry(LINKED_ITERATOR* itr){
+	LINKED_ENTRY* e = itr->nextEntry;
 	if (e && !(itr->nextEntry = e->next)){
 		unsigned int index = indexFor(e->hash, itr->map->capacity);
 		if (index < itr->map->capacity - 1)
@@ -153,15 +165,15 @@ static ENTRY* nextEntry(ITERATOR* itr){
 	return e;
 }
 
-static int hasNext(ITERATOR* itr) {
+static int hasNext(LINKED_ITERATOR* itr) {
 	return itr->nextEntry!=NULL;
 }
 
-ITERATOR* createIterator(HASH_MAP* map) {
+LINKED_ITERATOR* createLinkedIterator(LINKED_HASH_MAP* map) {
 	if (!map)
 		return NULL;
 
-	ITERATOR* itr = (ITERATOR*)malloc(sizeof(ITERATOR));
+	LINKED_ITERATOR* itr = (LINKED_ITERATOR*)malloc(sizeof(LINKED_ITERATOR));
 	itr->map = map;
 	itr->next=nextEntry;
 	itr->has_next=hasNext;

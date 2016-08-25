@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <common/hash_map.h>
 
@@ -33,12 +34,12 @@ int main() {
 	printf("map->size=%d, map->capacity=%d\n", map->size, map->capacity);
 
 	TOKEN token6;
-	token6.value = "f";
+	token6.value = "fdadas";
 	put(map, token6.value, &token6);
 	printf("map->size=%d, map->capacity=%d\n", map->size, map->capacity);
 
 	TOKEN token7;
-	token7.value = "g";
+	token7.value = "gdaa";
 	put(map, token7.value, &token7);
 	printf("map->size=%d, map->capacity=%d\n", map->size, map->capacity);
 		
@@ -51,5 +52,13 @@ int main() {
 	printf("get(map, \"d\")->value=%s\n", get(map, "d")?((TOKEN*)get(map, "d"))->value:"NULL" );
 	
 	printf("contains(\"c\"): %s\n", containsKey(map, "c")?"true": "false");
+
+	ITERATOR* itr = createIterator(map);
+	while (itr->has_next(itr)){
+		ENTRY* entry = itr->next(itr);
+		printf("key=%s, value=%p\n", entry->key, entry->value);
+	}
+
+	free(itr);
 	return 0;
 }

@@ -13,6 +13,13 @@ typedef struct HASH_MAP {
         ENTRY** table;
 }HASH_MAP;
 
+typedef struct ITERATOR {
+	HASH_MAP* map;
+	int (*has_next)(struct ITERATOR*);
+	ENTRY* (*next)(struct ITERATOR*);
+	ENTRY* nextEntry;
+}ITERATOR;
+
 HASH_MAP* createMap();
 
 void initMap(HASH_MAP* map);
@@ -26,5 +33,7 @@ int isEmpty(HASH_MAP* map);
 int containsKey(HASH_MAP* map, char* key);
 
 void* removeWithKey(HASH_MAP* map, char* key);
+
+ITERATOR* createIterator(HASH_MAP* map);
 
 #endif
