@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <common/hash_map.h>
+#include <common/linked_hash_map.h>
 
 #include "grammar.h"
 #define YYDEBUG	1
@@ -12,7 +12,8 @@ extern char *yytext;
 
 TOKEN* curr;
 
-HASH_MAP map;
+LINKED_HASH_MAP map;
+
 %}
 
 %union {
@@ -35,14 +36,14 @@ line
 :product_left COLON product_right CR
 {
 	TOKEN* token = $1;
-	if (containsKey(token->value)){
+	if (linkedMapContainsKey(token->value)){
 		TOKEN_LIST* list = token -> children;
 		TOKEN_LIST* new_list = $3;
 		for (;list && list->next;list=list->next);
 		list-> next = new_list;
 		new_list->pre = list
 	}else
-		put(&map, token->value, token);
+		putLinkedMap(&map, token->value, token);
 	char product[8192]={0};
 	char* p = (char*) product;
 	int len = strlen(token->value);
