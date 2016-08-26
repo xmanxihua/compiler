@@ -53,11 +53,13 @@ static void resize(HASH_MAP* map, size_t capacity){
         ENTRY* entry;
         int i;
         for (i=0, entry=oldTable[i]; i<oldCapacity; entry=oldTable[++i]){
-                for (;entry;entry=entry->next){
+                while (entry){
                         unsigned int index = indexFor(entry->hash, capacity);
                         ENTRY* e = map->table[index];
+			ENTRY* temp = entry->next;
                         entry->next = e;
                         map->table[index] = entry;
+			entry = temp;
                 }
         }
         free(oldTable);

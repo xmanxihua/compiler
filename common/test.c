@@ -3,11 +3,11 @@
 #include <time.h>
 #include <string.h>
 
-#include "hash_map.h"
+#include "linked_hash_map.h"
 
 int main() {
-	HASH_MAP map;
-	initMap(&map);
+	LINKED_HASH_MAP map;
+	initLinkedMap(&map);
 	int i = 0;
 	char alpha[] = "abcdefghijklmnopq12345678_PEZDKLFR";
 	srand(time(NULL));
@@ -20,15 +20,23 @@ int main() {
 			int r = rand()%strlen(alpha);
 			pKey[j] = alpha[r];
 		}
+		if (i==10){
+			printf ("put (%s, %s)\n", "BBB", "BBB");
+			putLinkedMap(&map, "BBB", "BBB");
+		}
 		printf ("put (%s, %s)\n", pKey, pKey);
-		put(&map, pKey, pKey);
+		putLinkedMap(&map, pKey, pKey);
 		//printf("map.capacity = %d, map.size=%d\n", map.capacity, map.size);
 	}
+	putLinkedMap(&map, "AAAA", "AAAA");
+	linkedMapRemoveWithKey(&map, "BBB");
 	
-	ITERATOR* it = createIterator(&map);
+	LINKED_ITERATOR* it = createLinkedIterator(&map);
 	while (it->has_next(it)){
-		ENTRY* e = it->next(it);
+		LINKED_ENTRY* e = it->next(it);
 		printf("(%s, %s)\n", e->key, (char*)e->value);
+		
 	}
+	
 	return 0;
 }

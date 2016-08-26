@@ -6,7 +6,6 @@
 
 #define MAP_INIT_CAPACITY	2
 
-static LINKED_ENTRY* HEADER;
 
 static unsigned int elf_hash(char* key){
         unsigned int hash = 0;
@@ -25,27 +24,32 @@ static unsigned int indexFor(unsigned int hashCode, size_t length){
         return hashCode & (length -1);
 }
 
-LINKED_HASH_MAP* createMap(){
+static LINKED_ENTRY* createHeaderEntry() {
+	LINKED_ENTRY* e = (LINKED_ENTRY*) malloc(sizeof (LINKED_ENTRY));
+	memset(e, 0, sizeof(LINKED_ENTRY));
+	e->hash = -1;
+	e->before = e->after = e;	
+	return e;
+}
+
+LINKED_HASH_MAP* createLinkedMap(){
         LINKED_HASH_MAP* map = (LINKED_HASH_MAP*)malloc(sizeof (LINKED_HASH_MAP));
         memset(map, 0, sizeof(LINKED_HASH_MAP));
         map->capacity = MAP_INIT_CAPACITY;
         map->table = (LINKED_ENTRY**)malloc(map->capacity * sizeof (LINKED_ENTRY*));
         memset(map->table, 0, map->capacity * sizeof (LINKED_ENTRY*));
-	HEADER = (LINKED_ENTRY*) malloc(sizeof (LINKED_ENTRY));
-	memset(HEADER, 0, sizeof(LINKED_ENTRY));
-	HEADER->before = HEADER->after = HEADER;
-	HEADER->hash = -1;
-	map->header = HEADER;
+	map->header = createHeaderEntry();
         return map;
 }
 
-void initMap(LINKED_HASH_MAP* map){
+void initLinkedMap(LINKED_HASH_MAP* map){
 	if (!map)
 		return;
         memset(map, 0, sizeof(LINKED_HASH_MAP));
         map->capacity = MAP_INIT_CAPACITY;
         map->table = (LINKED_ENTRY**)malloc(map->capacity * sizeof (LINKED_ENTRY*));
         memset(map->table, 0, map->capacity * sizeof (LINKED_ENTRY*));
+	map->header = createHeaderEntry();
 }
 
 static void resize(LINKED_HASH_MAP* map, size_t capacity){
@@ -60,11 +64,13 @@ static void resize(LINKED_HASH_MAP* map, size_t capacity){
         LINKED_ENTRY* entry;
         int i;
         for (i=0, entry=oldTable[i]; i<oldCapacity; entry=oldTable[++i]){
-                for (;entry;entry=entry->next){
+                while (entry){
                         unsigned int index = indexFor(entry->hash, capacity);
                         LINKED_ENTRY* e = map->table[index];
+			LINKED_ENTRY* temp = entry->next;
                         entry->next = e;
-                        map->table[index] = entry;
+			map->table[index] = entry;
+			entry = temp;
                 }
         }
         free(oldTable);
@@ -89,14 +95,14 @@ static void addTokenEntry(LINKED_HASH_MAP* map, char* key, void* value, unsigned
 
         ++map->size;
 
-	//add entry to  double linked list
+	//add entry to double linked list
 	entry->before = map->header->before;
 	entry->after = map->header;
 	map->header->before->after = entry;
 	map->header->before = entry;
 }
 
-void* put(LINKED_HASH_MAP* map, char* key, void* value) {
+void* putLinkedMap(LINKED_HASH_MAP* map, char* key, void* value) {
         if (!map || !key || !value)
                 return NULL;
         unsigned int hash = elf_hash(key);
@@ -114,7 +120,7 @@ void* put(LINKED_HASH_MAP* map, char* key, void* value) {
         return NULL;
 }
 
-void* get(LINKED_HASH_MAP* map, char* key) {
+void* getLinkedMap(LINKED_HASH_MAP* map, char* key) {
         if (!map || !map->size || !key)
                 return NULL;
         unsigned hash = elf_hash(key);
@@ -127,15 +133,15 @@ void* get(LINKED_HASH_MAP* map, char* key) {
         return NULL;
 }
 
-int isEmpty(LINKED_HASH_MAP* map) {
+int isLinkedMapEmpty(LINKED_HASH_MAP* map) {
 	return map ? !map->size>0 : 1;
 }
 
-int containsKey(LINKED_HASH_MAP* map, char* key){
-	return get(map, key)!=NULL;
+int linkedMapContainsKey(LINKED_HASH_MAP* map, char* key){
+	return getLinkedMap(map, key)!=NULL;
 }
 
-void* removeWithKey(LINKED_HASH_MAP* map, char* key) {
+void* linkedMapRemoveWithKey(LINKED_HASH_MAP* map, char* key) {
 	if (!map || !map->size || !key)
 		return NULL;
 	unsigned int hash = elf_hash(key);

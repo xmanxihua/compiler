@@ -19,23 +19,23 @@ typedef struct LINKED_HASH_MAP {
 typedef struct LINKED_ITERATOR {
         LINKED_HASH_MAP* map;
         int (*has_next)(struct LINKED_ITERATOR*);
-        ENTRY* (*next)(struct LINKED_ITERATOR*);
-        ENTRY* nextEntry;
+        LINKED_ENTRY* (*next)(struct LINKED_ITERATOR*);
+        LINKED_ENTRY* nextEntry;
 }LINKED_ITERATOR;
 
 LINKED_HASH_MAP* createMap();
 
-void initMap(LINKED_HASH_MAP* map);
+void initLinkedMap(LINKED_HASH_MAP* map);
 
-void* put(LINKED_HASH_MAP* map, char* key, void* value);
+void* putLinkedMap(LINKED_HASH_MAP* map, char* key, void* value);
 
-void* get(LINKED_HASH_MAP* map, char* key);
+void* getLinkedMap(LINKED_HASH_MAP* map, char* key);
 
-int isEmpty(LINKED_HASH_MAP* map);
+int isLinkedMapEmpty(LINKED_HASH_MAP* map);
 
-int containsKey(LINKED_HASH_MAP* map, char* key);
+int linkedMapContainsKey(LINKED_HASH_MAP* map, char* key);
 
-void* removeWithKey(LINKED_HASH_MAP* map, char* key);
+void* linkedMapRemoveWithKey(LINKED_HASH_MAP* map, char* key);
 
 LINKED_ITERATOR* createLinkedIterator(LINKED_HASH_MAP* map);
 
